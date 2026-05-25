@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-secondary-container: #1ea296;
+  --color-surface-dim: #0e1416;
+  --color-on-tertiary-fixed-variant: #910816;
+  --color-secondary-fixed: #84f5e8;
+  --color-surface-container: #1a2122;
+  --color-surface: #0e1416;
+  --color-surface-container-lowest: #090f11;
+  --color-outline-variant: #3c494c;
+  --color-on-secondary-container: #00302b;
+  --color-primary-container: #00bcd4;
+  --color-surface-container-high: #252b2c;
+  --color-on-primary-fixed-variant: #004e59;
+  --color-tertiary-fixed: #ffdad7;
+  --color-on-secondary-fixed: #00201d;
+  --color-on-primary-fixed: #001f25;
+  --color-inverse-on-surface: #2b3133;
+  --color-on-tertiary: #68000b;
+  --color-on-surface: #dde3e5;
+  --color-secondary-fixed-dim: #66d9cc;
+  --color-surface-container-highest: #2f3637;
+  --color-tertiary-fixed-dim: #ffb3ae;
+  --color-outline: #869396;
+  --color-surface-tint: #44d8f1;
+  --color-surface-variant: #2f3637;
+  --color-inverse-primary: #006876;
+  --color-tertiary: #ffb3ae;
+  --color-on-error-container: #ffdad6;
+  --color-on-background: #dde3e5;
+  --color-on-secondary: #003732;
+  --color-surface-container-low: #161d1e;
+  --color-surface-bright: #343a3c;
+  --color-on-surface-variant: #bbc9cc;
+  --color-inverse-surface: #dde3e5;
+  --color-on-error: #690005;
+  --color-primary-fixed-dim: #44d8f1;
+  --color-on-secondary-fixed-variant: #005049;
+  --color-secondary: #66d9cc;
+  --color-background: #0e1416;
+  --color-error: #ffb4ab;
+  --color-on-primary: #00363e;
+  --color-primary-fixed: #a1efff;
+  --color-tertiary-container: #ff8982;
+  --color-on-tertiary-fixed: #410004;
+  --color-error-container: #93000a;
+  --color-primary: #44d8f1;
+  --color-on-tertiary-container: #850011;
+  --color-on-primary-container: #004650;
+  
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* Custom Base styles */
+@layer base {
+  body {
+    background-color: #0e1416;
+    background: radial-gradient(circle at 50% 50%, #161d1e 0%, #0e1416 100%);
+    color: #dde3e5;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a2122;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3c494c;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #869396;
+}
+
+/* Accent Glow styles */
+.glow-cyan {
+  box-shadow: 0 0 12px 0 rgba(0, 188, 212, 0.35);
+}
+
+.active-glow {
+  box-shadow: 0 0 12px rgba(68, 216, 241, 0.15);
+}
+
+.auth-card {
+  box-shadow: 0 0 4px rgba(68, 216, 241, 0.05);
+}
+
+.sidebar-item-active {
+  background: rgba(0, 188, 212, 0.1);
+  color: #44d8f1;
+}
+
+/* Prevent layout shift */
+html, body, #root {
+  min-height: 100vh;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Quantum Trade",
+  "description": "High-caliber digital workspace for tactical backtesting, active candlestick replay and parameter trading journaling.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
