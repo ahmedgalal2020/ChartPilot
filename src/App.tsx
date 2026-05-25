@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CheckCircle2, Info, AlertCircle, X } from 'lucide-react';
 
@@ -19,6 +19,7 @@ import BacktestView from './components/BacktestView';
 import StrategyView from './components/StrategyView';
 import PortfolioView from './components/PortfolioView';
 import SettingsView from './components/SettingsView';
+import AdminPanel from './components/AdminPanel';
 
 interface AppNotification {
   id: string;
@@ -26,9 +27,40 @@ interface AppNotification {
   type: 'success' | 'info' | 'error';
 }
 
+const screenToPath: Record<string, string> = {
+  landing: '/',
+  auth: '/login',
+  dashboard: '/dashboard',
+  backtest: '/backtest',
+  strategy: '/strategy',
+  portfolio: '/workspaces',
+  settings: '/settings',
+  admin: '/admin',
+  'admin-users': '/admin/users',
+  'admin-payments': '/admin/payments',
+  'admin-invoices': '/admin/invoices',
+};
+
+const pathToScreen = (pathname: string) => {
+  if (pathname === '/admin') return 'admin';
+  if (pathname === '/admin/users') return 'admin-users';
+  if (pathname === '/admin/payments') return 'admin-payments';
+  if (pathname === '/admin/invoices') return 'admin-invoices';
+  if (pathname === '/login' || pathname === '/register' || pathname === '/forgot-password') return 'auth';
+  if (pathname === '/dashboard') return 'dashboard';
+  if (pathname === '/backtest') return 'backtest';
+  if (pathname === '/strategy') return 'strategy';
+  if (pathname === '/workspaces') return 'portfolio';
+  if (pathname === '/settings') return 'settings';
+  return 'landing';
+};
+
+const isAdminScreen = (screen: string) =>
+  ['admin', 'admin-users', 'admin-payments', 'admin-invoices'].includes(screen);
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [activeScreen, setActiveScreen] = useState<string>('landing');
+  const [activeScreen, setActiveScreen] = useState<string>(() => pathToScreen(window.location.pathname));
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(false);
   
@@ -61,6 +93,15 @@ export default function App() {
     return 'Unexpected Supabase operation failure.';
   };
 
+  const navigateTo = useCallback((screen: string, replace = false) => {
+    setActiveScreen(screen);
+    const nextPath = screenToPath[screen] || '/';
+    if (window.location.pathname !== nextPath) {
+      if (replace) window.history.replaceState({}, '', nextPath);
+      else window.history.pushState({}, '', nextPath);
+    }
+  }, []);
+
   const loadUserData = async (currentUser: User) => {
     setIsDataLoading(true);
     try {
@@ -92,12 +133,22 @@ export default function App() {
 
     const restoreSession = async () => {
       try {
+        const requestedScreen = pathToScreen(window.location.pathname);
         const restoredUser = await getCurrentUser();
         if (!isMounted) return;
         if (restoredUser) {
           setUser(restoredUser);
-          setActiveScreen('dashboard');
-          await loadUserData(restoredUser);
+          if (restoredUser.role === 'ADMIN') {
+            navigateTo(isAdminScreen(requestedScreen) ? requestedScreen : 'admin', true);
+          } else {
+            const nextScreen = isAdminScreen(requestedScreen) || requestedScreen === 'landing' || requestedScreen === 'auth'
+              ? 'dashboard'
+              : requestedScreen;
+            navigateTo(nextScreen, true);
+            await loadUserData(restoredUser);
+          }
+        } else if (requestedScreen !== 'landing' && requestedScreen !== 'auth') {
+          navigateTo('auth', true);
         }
       } catch (error) {
         if (isMounted) triggerNotification(getErrorMessage(error), 'error');
@@ -111,12 +162,24 @@ export default function App() {
     return () => {
       isMounted = false;
     };
+  }, [navigateTo]);
+
+  useEffect(() => {
+    const onPopState = () => setActiveScreen(pathToScreen(window.location.pathname));
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   // Login handler
   const handleUserLogin = async (authenticatedUser: User) => {
     setUser(authenticatedUser);
-    setActiveScreen('dashboard');
+    if (authenticatedUser.role === 'ADMIN') {
+      navigateTo('admin');
+      triggerNotification(`Admin session initialized. Welcome back, ${authenticatedUser.name}!`);
+      return;
+    }
+
+    navigateTo('dashboard');
     await loadUserData(authenticatedUser);
     triggerNotification(`Workstation session initialized. Welcome back, ${authenticatedUser.name}!`);
   };
@@ -131,7 +194,7 @@ export default function App() {
       setStrategies([]);
       setWorkspaces([]);
       setSettings(defaultSettings);
-      setActiveScreen('landing');
+      navigateTo('landing');
       triggerNotification('Session securely closed. Workstation cleared.', 'info');
     } catch (error) {
       triggerNotification(getErrorMessage(error), 'error');
@@ -184,7 +247,7 @@ export default function App() {
   const handleResumeBacktestSession = (session: BacktestSession) => {
     setActiveBacktestSession(session);
     setSelectedSymbol(session.symbol);
-    setActiveScreen('dashboard');
+    navigateTo('dashboard');
     triggerNotification(`Replay session loaded: ${session.name}`, 'info');
   };
 
@@ -296,7 +359,7 @@ export default function App() {
         ...w,
         isActive: w.id === workspace.id
       })));
-      setActiveScreen('dashboard');
+      navigateTo('dashboard');
     } catch (error) {
       triggerNotification(getErrorMessage(error), 'error');
     }
@@ -333,7 +396,7 @@ export default function App() {
       <TopNavBar 
         user={user} 
         activeScreen={activeScreen} 
-        onScreenChange={setActiveScreen} 
+        onScreenChange={navigateTo} 
         onLogout={handleUserLogout}
         selectedSymbol={user ? selectedSymbol : undefined}
       />
@@ -342,17 +405,17 @@ export default function App() {
       <div className="flex-grow flex content-stretch pt-12 relative w-full">
         
         {/* Render Side drawing panel only for logged in dashboard views */}
-        {user && activeScreen === 'dashboard' && (
+        {user && user.role !== 'ADMIN' && activeScreen === 'dashboard' && (
           <SideNavBar 
             onToolActivated={handleSideToolActivated} 
             activeScreen={activeScreen}
-            onScreenChange={setActiveScreen}
+            onScreenChange={navigateTo}
           />
         )}
 
         {/* Dynamic Screen router content */}
         <div className={`flex-grow flex flex-col min-w-0 transition-all ${
-          user && activeScreen === 'dashboard' ? 'md:pl-16' : ''
+          user && user.role !== 'ADMIN' && activeScreen === 'dashboard' ? 'md:pl-16' : ''
         }`}>
           <AnimatePresence mode="wait">
             <motion.div
@@ -365,7 +428,7 @@ export default function App() {
             >
               {activeScreen === 'landing' && (
                 <LandingPage 
-                  onStartTrading={() => setActiveScreen(user ? 'dashboard' : 'auth')} 
+                  onStartTrading={() => navigateTo(user ? 'dashboard' : 'auth')} 
                 />
               )}
 
@@ -375,13 +438,13 @@ export default function App() {
                 />
               )}
 
-              {user && isDataLoading && activeScreen !== 'landing' && activeScreen !== 'auth' && (
+              {user && user.role !== 'ADMIN' && isDataLoading && activeScreen !== 'landing' && activeScreen !== 'auth' && (
                 <div className="flex-grow flex items-center justify-center text-primary font-mono text-xs uppercase tracking-widest">
                   Syncing Supabase workspace...
                 </div>
               )}
 
-              {user && !isDataLoading && activeScreen === 'dashboard' && (
+              {user && user.role !== 'ADMIN' && !isDataLoading && activeScreen === 'dashboard' && (
                 <DashboardView 
                   userId={user.id}
                   settings={settings}
@@ -395,7 +458,7 @@ export default function App() {
                 />
               )}
 
-              {user && !isDataLoading && activeScreen === 'backtest' && (
+              {user && user.role !== 'ADMIN' && !isDataLoading && activeScreen === 'backtest' && (
                 <BacktestView 
                   sessions={sessions}
                   symbols={symbols}
@@ -407,7 +470,7 @@ export default function App() {
                 />
               )}
 
-              {user && !isDataLoading && activeScreen === 'strategy' && (
+              {user && user.role !== 'ADMIN' && !isDataLoading && activeScreen === 'strategy' && (
                 <StrategyView 
                   strategies={strategies}
                   onAddStrategy={handleAddStrategy}
@@ -416,7 +479,7 @@ export default function App() {
                 />
               )}
 
-              {user && !isDataLoading && activeScreen === 'portfolio' && (
+              {user && user.role !== 'ADMIN' && !isDataLoading && activeScreen === 'portfolio' && (
                 <PortfolioView 
                   workspaces={workspaces}
                   onAddWorkspace={handleAddWorkspace}
@@ -428,11 +491,29 @@ export default function App() {
                 />
               )}
 
-              {user && !isDataLoading && activeScreen === 'settings' && (
+              {user && user.role !== 'ADMIN' && !isDataLoading && activeScreen === 'settings' && (
                 <SettingsView 
                   settings={settings}
                   onSaveSettings={handleSaveSettings}
                   onAddNotification={(msg) => triggerNotification(msg, 'info')}
+                />
+              )}
+
+              {user && user.role === 'ADMIN' && ['admin', 'admin-users', 'admin-payments', 'admin-invoices'].includes(activeScreen) && (
+                <AdminPanel
+                  view={activeScreen as 'admin' | 'admin-users' | 'admin-payments' | 'admin-invoices'}
+                  currentUser={user}
+                  onScreenChange={navigateTo}
+                  onAddNotification={triggerNotification}
+                />
+              )}
+
+              {user && user.role === 'ADMIN' && !['admin', 'admin-users', 'admin-payments', 'admin-invoices'].includes(activeScreen) && (
+                <AdminPanel
+                  view="admin"
+                  currentUser={user}
+                  onScreenChange={navigateTo}
+                  onAddNotification={triggerNotification}
                 />
               )}
             </motion.div>

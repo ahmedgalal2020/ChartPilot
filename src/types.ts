@@ -3,6 +3,10 @@ export interface User {
   name: string;
   email: string;
   avatar: string;
+  role: 'USER' | 'ADMIN';
+  status: 'active' | 'inactive' | 'suspended';
+  lastLoginAt?: string | null;
+  createdAt?: string | null;
 }
 
 export type Timeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1D';
@@ -148,4 +152,63 @@ export interface UserSettings {
   defaultInitialBalance?: number;
   defaultTimeframe?: Timeframe;
   defaultSymbol?: SymbolPair;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  planName: string;
+  status: 'free' | 'paid' | 'trial' | 'cancelled' | 'past_due';
+  currentPeriodStart?: string | null;
+  currentPeriodEnd?: string | null;
+  provider?: string | null;
+  providerCustomerId?: string | null;
+  providerSubscriptionId?: string | null;
+}
+
+export interface Payment {
+  id: string;
+  userId: string;
+  userName?: string;
+  userEmail?: string;
+  amount: number;
+  currency: string;
+  status: 'paid' | 'failed' | 'pending' | 'refunded';
+  provider?: string | null;
+  providerPaymentId?: string | null;
+  providerCustomerId?: string | null;
+  planName?: string | null;
+  invoiceUrl?: string | null;
+  createdAt: string;
+}
+
+export interface Invoice {
+  id: string;
+  userId: string;
+  userName?: string;
+  userEmail?: string;
+  invoiceNumber: string;
+  amount: number;
+  currency: string;
+  status: 'paid' | 'failed' | 'pending' | 'refunded' | 'void';
+  invoiceUrl?: string | null;
+  createdAt: string;
+  paidAt?: string | null;
+}
+
+export interface AdminUser extends User {
+  subscriptionStatus: Subscription['status'];
+  currentPlan: string;
+  providerCustomerId?: string | null;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  activeUsers: number;
+  paidUsers: number;
+  freeUsers: number;
+  totalPayments: number;
+  monthlyRevenue: number;
+  latestUsers: AdminUser[];
+  latestPayments: Payment[];
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Settings as SettingsIcon, Wallet, LogOut, Code } from 'lucide-react';
+import { Bell, Settings as SettingsIcon, Wallet, LogOut, ShieldCheck } from 'lucide-react';
 import { User } from '../types';
 
 interface TopNavBarProps {
@@ -24,19 +24,19 @@ export default function TopNavBar({
       <div className="flex items-center gap-6">
         <span 
           className="font-headline-md text-headline-md font-bold text-primary tracking-tighter cursor-pointer flex items-center gap-2"
-          onClick={() => onScreenChange('landing')}
+          onClick={() => onScreenChange(user?.role === 'ADMIN' ? 'admin' : 'landing')}
         >
           ChartPilot
         </span>
 
-        {selectedSymbol && (
+        {selectedSymbol && user?.role !== 'ADMIN' && (
           <div className="hidden sm:flex items-center gap-2 px-3 py-0.5 bg-surface-container rounded border border-outline-variant">
             <span className="font-data-mono text-data-mono text-primary text-xs">{selectedSymbol}</span>
             <span className="text-secondary text-[10px] font-bold">{priceChange || '+2.45%'}</span>
           </div>
         )}
 
-        {user && (
+        {user && user.role !== 'ADMIN' && (
           <nav className="hidden md:flex gap-6 ml-4">
             <button 
               onClick={() => onScreenChange('dashboard')}
@@ -80,30 +80,53 @@ export default function TopNavBar({
             </button>
           </nav>
         )}
+
+        {user && user.role === 'ADMIN' && (
+          <nav className="hidden md:flex gap-6 ml-4">
+            {[
+              { id: 'admin', label: 'Overview' },
+              { id: 'admin-users', label: 'Users' },
+              { id: 'admin-payments', label: 'Payments' },
+              { id: 'admin-invoices', label: 'Invoices' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onScreenChange(item.id)}
+                className={`font-body-base text-body-base pb-1 transition-all ${
+                  activeScreen === item.id
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
         {user ? (
           <>
             <button 
-              onClick={() => onScreenChange('settings')}
+              onClick={() => onScreenChange(user.role === 'ADMIN' ? 'admin' : 'settings')}
               className={`p-1.5 hover:bg-surface-container-high transition-all duration-200 rounded-full text-on-surface-variant ${
                 activeScreen === 'settings' ? 'text-primary bg-surface-container-high' : ''
               }`}
-              title="Workstation Settings"
+              title={user.role === 'ADMIN' ? 'Admin Overview' : 'Workstation Settings'}
             >
-              <SettingsIcon className="w-4 h-4" />
+              {user.role === 'ADMIN' ? <ShieldCheck className="w-4 h-4" /> : <SettingsIcon className="w-4 h-4" />}
             </button>
-            <button className="p-1.5 hover:bg-surface-container-high transition-all duration-200 rounded-full text-on-surface-variant" title="Notifications">
+            {user.role !== 'ADMIN' && <button className="p-1.5 hover:bg-surface-container-high transition-all duration-200 rounded-full text-on-surface-variant" title="Notifications">
               <Bell className="w-4 h-4" />
-            </button>
-            <button className="p-1.5 hover:bg-surface-container-high transition-all duration-200 rounded-full text-on-surface-variant" title="Balance Wallet">
+            </button>}
+            {user.role !== 'ADMIN' && <button className="p-1.5 hover:bg-surface-container-high transition-all duration-200 rounded-full text-on-surface-variant" title="Balance Wallet">
               <Wallet className="w-4 h-4" />
-            </button>
+            </button>}
             
             <div 
               className="h-7 w-7 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant cursor-pointer hover:border-primary transition-all ml-1 flex items-center justify-center"
-              onClick={() => onScreenChange('settings')}
+              onClick={() => onScreenChange(user.role === 'ADMIN' ? 'admin' : 'settings')}
               title={`${user.name}'s Profile`}
             >
               <img 
